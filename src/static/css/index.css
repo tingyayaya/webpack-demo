@@ -1,0 +1,13 @@
+body{
+  background: rosybrown;
+}
+.imgs{
+  background: url('../img/画板.png');
+  width: 100px;
+  height: 100px;
+  display: inline-block;
+  background-size: 100px; 
+}
+.img2{
+  width: 200px;
+}
