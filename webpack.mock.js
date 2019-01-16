@@ -12,6 +12,10 @@ module.exports = merge(base, {
     port: 9000,
   },
   plugins: [
-    
+    new webpack.DefinePlugin({
+        'process.env': {
+            NODE_ENV: '"mock"'
+        }
+    })
   ],
 })

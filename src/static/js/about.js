@@ -7,4 +7,3 @@ content.innerHTML = '关于我们';
 
 var s = sum(1,2);
 console.log(s);
-$()

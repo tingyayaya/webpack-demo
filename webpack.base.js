@@ -4,8 +4,12 @@ const glob = require('glob');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const webpack = require('webpack');
+const SpritesmithPlugin = require('webpack-spritesmith');
+
 
 let config = {
+  //添加ejs是can't resolves 'fs' 百度找到的方案 node: {fs: 'empty'}
+  node:{fs: 'empty'},
   entry: {},
   output: {
     filename: 'js/[name].bundle.[hash].js',
@@ -28,7 +32,7 @@ let config = {
         })
       },
       {
-        test: /\.(png|svg|jpg|gif)$/,
+        test: /\.(png|svg|jpe?g|gif)$/,
         loader: 'file-loader',
         options: {
           outputPath: './images',
@@ -54,8 +58,15 @@ let config = {
           }
         },
         exclude: /node_modeles/
+      },
+      {
+        test: /\.ejs$/,
+        loader: 'ejs-loader?variable=data',
       }
     ]
+  },
+  resolve: {
+    modules: ['node_modules', 'spritesmith-generated']
   },
   plugins: [
     // 详见 https://doc.webpack-china.org/plugins/extract-text-webpack-plugin/#-extract
@@ -67,7 +78,48 @@ let config = {
     // 自动加载模块
     new webpack.ProvidePlugin({
       $: 'jquery',
-      jQuery: 'jquery'
+      jQuery: 'jquery',
+      Mock: 'mockjs'
+    }),
+    new SpritesmithPlugin({
+      spritesmithOptions: {
+        padding: 4,
+      },
+      src: {
+        cwd: path.resolve(__dirname, 'src/static/images/icons/'), // 图标根路径
+        glob: '*.png' // 匹配任意 png 图标
+      },
+      target: {
+        image: path.resolve(__dirname, 'dist/images/sprite.png'), // 生成雪碧图目标路径与名称
+        // 设置生成CSS背景及其定位的文件或方式
+        css: [
+          [path.resolve(__dirname, 'dist/css/sprite.css'), {
+            format: 'function_based_template'
+          }]
+        ]
+        // css: path.resolve(__dirname, '../src/assets/spritesmith-generated/sprite.less')
+      },
+      customTemplates: {
+        'function_based_template': function (data) {
+          // console.log(data.sprites);
+          const shared = [`.w-icon { background-image: url(${data.sprites[0].image}) }`]
+          // 注意：此处默认图标使用的是二倍图
+          const perSprite = data.sprites.map(function (sprite) {
+            // background-size: SWpx SHpx;
+            return `.w-icon-${sprite.name} { display: inline-block; 
+              width: ${sprite.width}px;
+              height: ${sprite.width}px;
+              background-position: ${sprite.offset_x}px ${sprite.offset_y}px;
+              vertical-align: middle;
+            }`
+          })
+        
+          return shared.concat(perSprite).join('\r\n');
+        }
+      },
+      apiOptions: {
+        cssImageRef: "../sprite.png", // css文件中引用雪碧图的相对位置路径配置
+      },
     })
   ],
   optimization: {
@@ -135,14 +187,17 @@ if(entriesLength !== 1){
     config.entry[name] = entries[name];
     let htmlPlugin = new HtmlWebpackPlugin({
       filename: `./pages/${name}.html`,
-      template: `./src/pages/${name}.html`,
+      template: `./src/pages/${name}.ejs`,
       inject: true,
       chunks: [ name, 'vendor', 'common'],
-      chunksSortMode: 'dependency',
+      chunksSortMode: 'dependency'
     })
     config.plugins.push(htmlPlugin)
   });
 }else{
 
 }
+
+
+
 module.exports = config;
